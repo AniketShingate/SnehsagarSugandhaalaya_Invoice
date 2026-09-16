@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snehsagar Invoice System</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --pink-50: #FFF0F5;
+    --pink-100: #FFD6E7;
+    --pink-200: #FFB3D0;
+    --pink-400: #F06292;
+    --pink-600: #C2185B;
+    --pink-700: #AD1457;
+    --pink-800: #880E4F;
+    --gray-50: #FAFAFA;
+    --gray-100: #F5F5F5;
+    --gray-200: #EEEEEE;
+    --gray-400: #BDBDBD;
+    --gray-600: #757575;
+    --gray-800: #424242;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: linear-gradient(135deg, #FFF0F5 0%, #FFF 60%); min-height: 100vh; color: var(--gray-800); }
+  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .auth-card { background: #fff; border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 30px rgba(194,24,91,0.12); border-top: 4px solid var(--pink-600); }
+  .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+  .auth-logo h1 { font-size: 1.4rem; color: var(--pink-700); font-weight: 700; letter-spacing: 0.5px; }
+  .auth-logo p { font-size: 0.8rem; color: var(--gray-600); margin-top: 2px; }
+  .auth-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--gray-200); margin-bottom: 1.5rem; }
+  .auth-tab { flex: 1; padding: 0.6rem; text-align: center; cursor: pointer; font-size: 0.9rem; color: var(--gray-600); border-bottom: 2px solid transparent; transition: all .2s; }
+  .auth-tab.active { color: var(--pink-600); border-bottom-color: var(--pink-600); font-weight: 600; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 0.82rem; color: var(--gray-600); margin-bottom: 5px; font-weight: 500; }
+  .form-group input { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 0.9rem; outline: none; transition: border .2s; background: var(--gray-50); }
+  .form-group input:focus { border-color: var(--pink-400); background: #fff; }
+  .btn-primary { width: 100%; padding: 0.7rem; background: var(--pink-600); color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn-primary:hover { background: var(--pink-700); }
+  .err { background: #FFF0F5; border-left: 3px solid var(--pink-600); color: var(--pink-700); padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.83rem; margin-bottom: 1rem; }
+  .app-header { background: var(--pink-700); color: #fff; padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .app-header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
+  .app-header p { font-size: 0.72rem; opacity: .8; }
+  .header-right { display: flex; align-items: center; gap: 0.75rem; }
+  .user-badge { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 0.3rem 0.75rem; font-size: 0.82rem; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 0.3rem 0.75rem; border-radius: 20px; cursor: pointer; font-size: 0.82rem; transition: background .2s; }
+  .btn-logout:hover { background: rgba(255,255,255,0.3); }
+  .app-main { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem 3rem; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(194,24,91,0.07); overflow: hidden; }
+  .card-header { background: linear-gradient(135deg, var(--pink-700), var(--pink-600)); color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  .card-header h2 { font-size: 1rem; font-weight: 700; }
+  .card-header p { font-size: 0.75rem; opacity: .85; }
+  .card-body { padding: 1.25rem 1.5rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .inv-input { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--gray-200); border-radius: 7px; font-size: 0.88rem; outline: none; transition: border .2s; background: var(--gray-50); }
+  .inv-input:focus { border-color: var(--pink-400); background: #fff; }
+  .inv-label { font-size: 0.78rem; color: var(--gray-600); margin-bottom: 4px; font-weight: 500; display: block; }
+  .section-title { font-size: 0.88rem; font-weight: 700; color: var(--pink-700); margin-bottom: 0.75rem; border-bottom: 1px solid var(--pink-100); padding-bottom: 0.4rem; letter-spacing: 0.3px; }
+  .items-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .items-table th { background: var(--pink-50); color: var(--pink-700); font-size: 0.78rem; font-weight: 600; padding: 0.5rem 0.5rem; text-align: left; border-bottom: 1px solid var(--pink-100); }
+  .items-table th:nth-child(n+2) { text-align: center; }
+  .items-table td { padding: 0.35rem 0.4rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .items-table td:nth-child(1) { width: 40%; }
+  .items-table td:nth-child(2), .items-table td:nth-child(3), .items-table td:nth-child(4) { width: 16%; text-align: center; }
+  .items-table td:nth-child(5) { width: 5%; text-align: center; }
+  .td-input { width: 100%; border: 1px solid transparent; background: transparent; border-radius: 5px; padding: 0.3rem 0.4rem; font-size: 0.85rem; text-align: center; outline: none; }
+  .td-input:focus { border-color: #F48FB1; background: var(--pink-50); }
+  .td-input.left { text-align: left; }
+  .amount-display { font-weight: 600; color: var(--gray-800); }
+  .btn-rm { background: none; border: none; color: var(--pink-400); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 5px; border-radius: 4px; }
+  .btn-rm:hover { background: #FFF0F5; color: var(--pink-700); }
+  .btn-add-row { background: var(--pink-50); border: 1px dashed #F48FB1; color: var(--pink-600); border-radius: 7px; padding: 0.45rem 1rem; font-size: 0.82rem; cursor: pointer; transition: all .2s; width: 100%; }
+  .btn-add-row:hover { background: var(--pink-100); }
+  .totals-section { display: flex; justify-content: flex-end; margin-top: 0.75rem; }
+  .totals-box { background: var(--pink-50); border-radius: 10px; padding: 0.85rem 1.25rem; min-width: 260px; border: 1px solid var(--pink-100); }
+  .BankDetails-box { background: var(--pink-50); border-radius: 10px; padding: 0.85rem 1.25rem; min-width: 260px; border: 1px solid var(--pink-100);float: left;}
+  .total-row { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.88rem; color: var(--gray-600); }
+  .total-row span:last-child { font-weight: 500; color: var(--gray-800); }
+  .total-row.grand { border-top: 1px solid var(--pink-200); margin-top: 0.5rem; padding-top: 0.5rem; font-size: 1rem; font-weight: 700; color: var(--pink-700); }
+  .total-row.grand span:last-child { color: var(--pink-700); }
+  .action-bar { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; flex-wrap: wrap; }
+  .btn-action { padding: 0.6rem 1.25rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px; }
+  .btn-action.outline { background: #fff; border: 1.5px solid var(--pink-600); color: var(--pink-600); }
+  .btn-action.outline:hover { background: var(--pink-50); }
+  .btn-action.solid { background: var(--pink-600); border: 1.5px solid var(--pink-600); color: #fff; }
+  .btn-action.solid:hover { background: var(--pink-700); }
+  .btn-action.green { background: #2E7D32; border: 1.5px solid #2E7D32; color: #fff; }
+  .btn-action.green:hover { background: #1B5E20; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; overflow-y: auto; }
+  .preview-modal { background: #fff; border-radius: 12px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .preview-header { background: var(--pink-700); color: #fff; padding: 0.85rem 1.25rem; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .preview-header h3 { font-size: 0.95rem; }
+  .btn-close { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .inv-print { padding: 2rem; font-family: var(--font); }
+  .inv-print-header { background: linear-gradient(135deg, var(--pink-700), var(--pink-400)); color: #fff; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+  .download-print-header { color: #fff; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+  .inv-print-header h2 { font-size: 1.5rem; letter-spacing: 1px; margin-bottom: 4px; }
+  .inv-print-header p { font-size: 0.8rem; opacity: .9; margin: 2px 0; }
+  .inv-print-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; }
+  .meta-block { background: var(--gray-50); border-radius: 7px; padding: 0.75rem; border: 1px solid var(--gray-200); }
+  .meta-block strong { font-size: 0.75rem; color: var(--gray-600); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta-block span { color: var(--gray-800); font-weight: 500; }
+  .inv-print table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1.25rem; }
+  .inv-print table th { background: var(--pink-700); color: #fff; padding: 0.6rem 0.75rem; text-align: left; font-weight: 600; }
+  .inv-print table th:nth-child(n+2) { text-align: right; }
+  .inv-print table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--gray-100); }
+  .inv-print table td:nth-child(n+2) { text-align: right; }
+  .inv-print table tr:nth-child(even) td { background: var(--pink-50); }
+  .print-totals { display: flex; justify-content: flex-end; }
+  .print-totals-box { width: 280px; }
+  .print-total-row { display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; border-bottom: 1px dashed var(--gray-200); }
+  .print-total-row:last-child { border-bottom: none; border-top: 2px solid var(--pink-600); margin-top: 0.4rem; padding-top: 0.4rem; font-weight: 700; color: var(--pink-700); font-size: 1rem; }
+  .inv-footer { margin-top: 2rem; text-align: center; font-size: 0.78rem; color: var(--gray-600); border-top: 1px solid var(--gray-200); padding-top: 1rem; }
+  @media print {
+    .overlay { position: static; background: none; padding: 0; }
+    .preview-modal { box-shadow: none; max-height: none; border-radius: 0; }
+    .preview-header, .print-action-bar { display: none; }
+  }
+  @media (max-width: 600px) {
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .totals-box { min-width: 100%; }
+    .action-bar { flex-direction: column; }
+    .btn-action { justify-content: center; }
+    .inv-print-meta { grid-template-columns: 1fr; }
+  }
+
+.subscription-banner{
+background:#FFF8E1;border:1px solid #FFD54F;color:#795548;padding:8px 16px;border-radius:10px;margin-bottom:15px;font-size:10px;font-weight:600;text-align:right;
+}
+.subscription-banner.expiring{background:#FFF3E0;border-color:#FF9800;
+}
+.subscription-banner.danger{background:#FFEBEE;border-color:#F44336;color:#B71C1C;
+}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.onkeydown = function(e) {
+    if (e.keyCode == 123) {
+        return false;
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 73) {
+        return false;
+    }
+};
+
+let users = JSON.parse(localStorage.getItem('ssig_users') || '[]');
+let currentUser = JSON.parse(sessionStorage.getItem('ssig_user') || 'null');
+let view = currentUser ? 'invoice' : 'auth';
+let authTab = 'login';
+let showPreview = false;
+let loginForm = { email: '', password: '', error: '' };
+let regForm = { name: '', email: '', password: '', confirm: '', error: '' };
+// Invoice number is now read from localStorage without incrementing.
+// It is incremented only after a PDF is successfully generated.
+let invoice = {invoiceNo: getCurrentInvoiceNumber(),date: new Date().toISOString().slice(0, 10),customerName: '',customerMobile: '',gstin: '',items: [{ id: 1, particular: '', qty: '', rate: '', amount: 0 }]};
+let invoicePdfGenerated = false;
+function pdfFmt(n) {return 'Rs. ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');}
+function save() { localStorage.setItem('ssig_users', JSON.stringify(users)); }
+function calcItem(item) { item.amount = (parseFloat(item.qty)||0) * (parseFloat(item.rate)||0); return item; }
+function getSubtotal() { return invoice.items.reduce((s, it) => s + (it.amount||0), 0); }
+function getSGST() { return getSubtotal() * 0.025; }
+function getCGST() { return getSubtotal() * 0.025; }
+function getTotal() { return getSubtotal() + getSGST() + getCGST(); }
+function getGrandTotal() { return Math.round(getTotal()); }
+function getRoundOff() { return getGrandTotal() - getTotal(); }
+function fmt(n) { return '₹' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+function doLogin() {
+const u = users.find(u => u.email===loginForm.email && u.password===loginForm.password);
+if (!u) { loginForm.error='Invalid email or password'; render(); return; }
+
+// Subscription Expiry Check
+//const expiryDate = new Date('2026-05-30T00:00:00.000Z');
+const today = new Date();
+const expiryDate = new Date(u.expiryDate);
+
+if (today > expiryDate) {
+	loginForm.error = 'Your subscription has expired. Please contact Admin to renew your plan.';render(); return;
+}
+
+currentUser=u; sessionStorage.setItem('ssig_user',JSON.stringify(u)); view='invoice'; render();
+}
+function doRegister() {
+if (!regForm.name||!regForm.email||!regForm.password) { regForm.error='All fields required'; render(); return; }
+if (regForm.password!==regForm.confirm) { regForm.error='Passwords do not match'; render(); return; }
+if (users.find(u=>u.email===regForm.email)) { regForm.error='Email already registered'; render(); return; }
+
+// Registration Date & Expiry Date = 30 Days
+const createdDate = new Date();
+const expiryDate = new Date(); expiryDate.setDate(expiryDate.getDate() + 30);
+
+//const u={name:regForm.name,email:regForm.email,password:regForm.password};
+
+const u = {name: regForm.name,email: regForm.email,password: regForm.password,createdAt: createdDate.toISOString(),expiryDate: expiryDate.toISOString()
+};
+
+users.push(u); save(); currentUser=u; sessionStorage.setItem('ssig_user',JSON.stringify(u)); view='invoice'; render();
+}
+
+function doLogout() { currentUser=null; sessionStorage.removeItem('ssig_user'); view='auth'; render(); }
+function getDaysRemaining() {
+  if (!currentUser || !currentUser.expiryDate) {
+    return 0;
+  }
+
+  const today = new Date();
+  const expiry = new Date(currentUser.expiryDate);
+  const diffTime = expiry - today;
+  return Math.max(0,Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  );
+}
+
+function formatExpiryDate(dateString) {
+  const d = new Date(dateString);
+  return d.toLocaleDateString(
+    'en-IN',{day: '2-digit',month: 'short',year: 'numeric'
+    }
+  );
+}
+
+function addRow() { invoice.items.push({id:Date.now(),particular:'',qty:'',rate:'',amount:0}); render(); }
+function removeRow(id) { if(invoice.items.length===1)return; invoice.items=invoice.items.filter(it=>it.id!==id); render(); }
+function updateItem(id,field,val) {
+  invoice.items=invoice.items.map(it=>{if(it.id===id){it[field]=val;calcItem(it);}return it;});
+  renderTotals();
+}
+function renderTotals() { const el = document.getElementById('totals-section');
+if (el) {
+      el.innerHTML = totalsHTML();
+      // Update amount in words
+      updateAmountInWords();
+  }
+}
+
+function getCurrentInvoiceNumber() {
+  let lastInvoiceNo = parseInt(localStorage.getItem("lastInvoiceNo") || "1", 10);
+  if (!Number.isFinite(lastInvoiceNo) || lastInvoiceNo < 1) lastInvoiceNo = 1;
+  return "SS-" + String(lastInvoiceNo).padStart(3, '0');
+}
+
+function advanceInvoiceNumber() {
+  let currentNo = parseInt(localStorage.getItem("lastInvoiceNo") || "1", 10);
+  if (!Number.isFinite(currentNo) || currentNo < 1) currentNo = 1;
+
+  const nextNo = currentNo + 1;
+  localStorage.setItem("lastInvoiceNo", String(nextNo));
+  return "SS-" + String(nextNo).padStart(3, '0');
+}
+
+// One-time reset requested for this application: start from SS-001.
+// After the first PDF is generated, the number will move to SS-002.
+if (localStorage.getItem("invoiceNumberResetV1") !== "done") {
+  localStorage.setItem("lastInvoiceNo", "1");
+  localStorage.setItem("invoiceNumberResetV1", "done");
+  invoice.invoiceNo = "SS-001";
+}
+
+function numberToWords(num) {
+    const ones = [
+        "", "One", "Two", "Three", "Four", "Five",
+        "Six", "Seven", "Eight", "Nine", "Ten",
+        "Eleven", "Twelve", "Thirteen", "Fourteen",
+        "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"
+    ];
+    const tens = [
+        "", "", "Twenty", "Thirty", "Forty",
+        "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"
+    ];
+    function convertHundreds(n) {
+        let str = "";
+        if (n > 99) {
+            str += ones[Math.floor(n / 100)] + " Hundred ";
+            n = n % 100;
+        }
+        if (n > 19) {
+            str += tens[Math.floor(n / 10)] + " ";
+            n = n % 10;
+        }
+        if (n > 0) {
+            str += ones[n] + " ";
+        }
+        return str.trim();
+    }
+
+    if (num == 0) return "Zero Only";
+    let result = "";
+    if (num >= 100000) {
+        result += convertHundreds(Math.floor(num / 100000)) + " Lakh ";
+        num = num % 100000;
+    }
+    if (num >= 1000) {
+        result += convertHundreds(Math.floor(num / 1000)) + " Thousand ";
+        num = num % 1000;
+    }
+    if (num > 0) {
+        result += convertHundreds(num);
+    }
+    return result.trim() + " Only";
+}
+
+function updateAmountInWords() {
+    let amount = getGrandTotal();
+    document.getElementById("amountWords").innerText =
+        numberToWords(amount);
+}
+
+function totalsHTML() {
+  return `<div class="totals-section"><div class="totals-box">
+    <div class="total-row"><span>Subtotal</span><span>${pdfFmt(getSubtotal())}</span></div>
+    <div class="total-row"><span>SGST (2.5%)</span><span>${pdfFmt(getSGST())}</span></div>
+    <div class="total-row"><span>CGST (2.5%)</span><span>${pdfFmt(getCGST())}</span></div>
+    <div class="total-row"><span>Total</span><span>${pdfFmt(getTotal())}</span></div>
+    <div class="total-row"><span>Round Off</span><span>${getRoundOff()>=0?'+':''}${getRoundOff().toFixed(2)}</span></div>
+    <div class="total-row grand"><span>Grand Total</span><span id="grandTotal">${pdfFmt(getGrandTotal())}</span></div>
+    <div class="total-row">In words Rupees :<span id="amountWords"></span></div>
+  </div></div>`;
+}
+
+async function generatePDF() {
+  // Prevent the same invoice from receiving multiple invoice numbers if
+  // the PDF button is clicked again after a successful generation.
+  if (invoicePdfGenerated) {
+    alert('This invoice PDF has already been generated. Please click Reset to create the next invoice.');
+    return;
+  }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','mm','a4');
+  const pink=[194,24,91],
+        pinkLight=[255,240,245],
+        gray=[97,97,97];
+
+  let y=15;
+
+  // =========================
+  // Marathi Header Image
+  // =========================
+  const canvas = await html2canvas(
+    document.getElementById("marathiHeader"),
+    {
+      scale:2
+    }
+  );
+
+  const imgData = canvas.toDataURL("image/png");
+  doc.addImage(imgData,'PNG',0,0,210,43);
+  // =========================
+
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  y=50;
+
+  doc.setTextColor(50,50,50);
+  doc.setFillColor(...pinkLight);
+  doc.rect(10,y-5,90,22,'F');
+  doc.rect(110,y-5,90,22,'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(...gray);
+  doc.text('BILLED TO',15,y);
+  doc.text('INVOICE DETAILS',115,y);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(50,50,50);
+  doc.setFontSize(9);
+  doc.text(invoice.customerName||'-',15,y+7);
+
+  if(invoice.customerMobile)
+    doc.text('Mobile: +91 '+invoice.customerMobile,15,y+12);
+    doc.text('GSTIN: '+(invoice.gstin||'N/A'),15,y+(invoice.customerMobile?17:12));
+    doc.text('Invoice No: '+invoice.invoiceNo,115,y+7);
+    doc.text('Date: '+invoice.date,115,y+14);
+    y+=20;
+
+  doc.setFillColor(...pink);
+  doc.rect(10,y,190,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('Particulars',15,y+5.5);
+  doc.text('Qty',110,y+5.5,{align:'center'});
+  doc.text('Rate',140,y+5.5,{align:'center'});
+  doc.text('Amount',192,y+5.5,{align:'right'});
+  y+=8;
+
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(50,50,50);
+  invoice.items.forEach((it,i)=>{
+    if(i%2===1){
+      doc.setFillColor(255,240,245);
+      doc.rect(10,y-1,190,6,'F');
+    }
+
+    doc.setFontSize(9);
+    doc.text(it.particular||'-',15,y+3);
+
+    doc.text(
+      it.qty?it.qty.toString():'-',
+      110,
+      y+3,
+      {align:'center'}
+    );
+
+    doc.text(
+      it.rate ? pdfFmt(parseFloat(it.rate)) : '-',
+      140,
+      y+3,
+      {align:'center'}
+    );
+
+    doc.text(
+      pdfFmt(it.amount),
+      192,
+      y+3,
+      {align:'right'}
+    );
+	// ========================= grid hight
+    y+=6;
+  });
+
+  y+=2;
+
+  doc.setDrawColor(...pink);
+  doc.line(10,y,200,y);
+  y+=5;
+  const col1=130,
+        col2=192;
+
+  doc.setFontSize(9);
+  [
+    ['Subtotal',pdfFmt(getSubtotal())],
+    ['SGST (2.5%)',pdfFmt(getSGST())],
+    ['CGST (2.5%)',pdfFmt(getCGST())],
+    ['Total',pdfFmt(getTotal())],
+    ['Round Off',(getRoundOff()>=0?'+':'')+getRoundOff().toFixed(2)]
+  ].forEach(([l,v])=>{
+
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...gray);
+    doc.text(l,col1,y);
+    doc.setTextColor(50,50,50);
+    doc.text(v,col2,y,{align:'right'});
+    y+=5;
+  });
+
+  doc.setFillColor(...pink);
+  doc.rect(col1-5,y-3,200-col1+5,10,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('GRAND TOTAL',col1,y+4);
+
+  doc.text(pdfFmt(getGrandTotal()), col2,y+4, {align:'right'});
+
+  y+=16;
+  doc.setTextColor(80,80,80);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('In words Rupees : ' + numberToWords(getGrandTotal()),10,y);
+  y += 10;
+
+  doc.text('Declaration : We declare that this invoice shows the actual price of goods described & particulars are true & correct.',10,y);
+  y += 5;
+  doc.text('Terms : No refund Subject to Islampur Jurisdiction. ',10,y);
+
+// ==========================
+// Bank Details Section
+// ==========================
+
+y += 10;
+
+// Section Title
+doc.setFontSize(12);
+doc.setFont('helvetica','bold');
+doc.setTextColor(...pink);
+doc.text('Bank Details',10,y);
+y += 1;
+doc.setDrawColor(...pink);
+doc.line(10,y,200,y);
+
+
+// Light Pink Box
+doc.setFillColor(245,235,240);
+doc.setDrawColor(255,192,203);
+doc.roundedRect(10,y+2,80,30,4,4,'FD');
+
+// Left Labels
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+doc.setTextColor(110,110,110);
+doc.text('Bank Name',16,y+10);
+doc.text('Branch',16,y+15);
+doc.text('A/c. No.',16,y+20);
+doc.text('IFSC Code',16,y+25);
+// Right Values
+doc.setFont('helvetica','bold');
+doc.setTextColor(40,40,40);
+doc.text('ICICI Bank',88,y+10,{align:'right'});
+doc.text('Islampur',88,y+15,{align:'right'});
+doc.text('095505007541',88,y+20,{align:'right'});
+doc.text('ICIC0000955',88,y+25,{align:'right'});
+y += 50;
+// ==========================
+
+  doc.setTextColor(...gray);
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(8);
+  doc.text(
+    'Thank you for your business! Visit Again! This is a computer-generated invoice.',
+    105,
+    y+8,
+    {align:'center'}
+  );
+
+  doc.save(
+    'Snehsagar_Invoice_'+invoice.invoiceNo+'.pdf'
+  );
+
+  // IMPORTANT: advance the invoice number ONLY after PDF generation.
+  // The PDF keeps the current number (e.g. SS-001); the next invoice
+  // will use SS-002.
+  invoicePdfGenerated = true;
+  invoice.invoiceNo = advanceInvoiceNumber();
+  render();
+
+  alert('PDF generated successfully. Next Invoice No. is ' + invoice.invoiceNo);
+}
+
+function printInvoice() {
+  const content=document.getElementById('print-area');
+  if(!content)return;
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Invoice</title><style>body{font-family:Segoe UI,sans-serif;margin:0;}table{width:100%;border-collapse:collapse;}th{background:#C2185B;color:#fff;padding:8px;}td{padding:6px 8px;border-bottom:1px solid #eee;}</style></head><body>');
+  w.document.write(content.innerHTML);
+  w.document.write('</body></html>');
+  w.document.close(); w.print();
+}
+
+function authPage() {
+  return `<div class="auth-wrap"><div class="auth-card">
+    <div class="auth-logo">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#C2185B,#F06292);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.4rem;color:#fff;">🌸</div>
+      <h1>स्नेहसागर सुगंधालय</h1><p>Invoice Management System</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab ${authTab==='login'?'active':''}" onclick="authTab='login';render()">Sign In</div>
+      <!--<div class="auth-tab ${authTab==='register'?'active':''}" onclick="authTab='register';render()">Register</div>-->
+    </div>
+    ${authTab==='login'?`
+      ${loginForm.error?`<div class="err">${loginForm.error}</div>`:''}
+      <div class="form-group"><label>Email</label><input type="email" value="${loginForm.email}" oninput="loginForm.email=this.value" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" value="${loginForm.password}" oninput="loginForm.password=this.value" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    `:`
+      ${regForm.error?`<div class="err">${regForm.error}</div>`:''}
+      <div class="form-group"><label>Full Name</label><input type="text" value="${regForm.name}" oninput="regForm.name=this.value" placeholder="Your Name"></div>
+      <div class="form-group"><label>Email</label><input type="email" value="${regForm.email}" oninput="regForm.email=this.value" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" value="${regForm.password}" oninput="regForm.password=this.value" placeholder="Min 4 chars"></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" value="${regForm.confirm}" oninput="regForm.confirm=this.value" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    `}
+  </div></div>`;
+}
+
+function invoicePage() {
+  return `<div>
+    <div class="app-header">
+      <div><h1>🌸 स्नेहसागर सुगंधालय 🌸</h1><p>Invoice Management System</p></div>
+      <div class="header-right">
+        <span class="user-badge">👤 ${currentUser.name}</span>
+        <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+
+${currentUser && currentUser.expiryDate ? `
+<div class="subscription-banner ${
+  getDaysRemaining() <= 5
+    ? 'danger'
+    : getDaysRemaining() <= 10
+      ? 'expiring'
+      : ''
+}">
+  ⏳ Your subscription will expire on
+  <strong>${formatExpiryDate(currentUser.expiryDate)}</strong>(${getDaysRemaining()} days remaining)
+</div>
+` : ''}
+
+    <div class="app-main">
+      <div class="card">
+        <div class="card-header">
+          <div><h2>New Invoice</h2><p>Create a professional tax invoice</p></div>
+          <span style="font-size:1.5rem">🧾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-title">Invoice Details</div>
+          <div class="form-row-3">
+            <div>
+              <label class="inv-label">Invoice No.</label>
+              <input class="inv-input" value="${invoice.invoiceNo}" oninput="invoice.invoiceNo=this.value">
+            </div>
+            <div>
+              <label class="inv-label">Date</label>
+              <input class="inv-input" type="date" value="${invoice.date}" oninput="invoice.date=this.value">
+            </div>
+            <div>
+              <label class="inv-label">GSTIN</label>
+              <input class="inv-input" value="${invoice.gstin}" oninput="invoice.gstin=this.value" placeholder="e.g. 24XXXXXX1Z5">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="inv-label">Customer Name</label>
+              <input class="inv-input" value="${invoice.customerName}" oninput="invoice.customerName=this.value" placeholder="Full name or company">
+            </div>
+            <div>
+              <label class="inv-label">Customer Mobile No.</label>
+              <div style="display:flex;align-items:center;gap:0">
+                <span style="padding:0.55rem 0.6rem;background:var(--pink-50);border:1px solid var(--gray-200);border-right:none;border-radius:7px 0 0 7px;font-size:0.85rem;color:var(--gray-600);white-space:nowrap">+91</span>
+                <input class="inv-input" style="border-radius:0 7px 7px 0;border-left:none" type="tel" maxlength="10" value="${invoice.customerMobile}" oninput="invoice.customerMobile=this.value.replace(/\D/g,'')" placeholder="10-digit number">
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top:1.25rem">Items</div>
+          <table class="items-table">
+            <thead><tr>
+              <th>Particulars</th><th>Qty</th><th>Rate (₹)</th><th>Amount (₹)</th><th></th>
+            </tr></thead>
+            <tbody>
+              ${invoice.items.map(it=>`<tr>
+                <td><input class="td-input left" value="${it.particular}" oninput="updateItem(${it.id},'particular',this.value)" placeholder="Item description"></td>
+                <td><input class="td-input" type="number" value="${it.qty}" oninput="updateItem(${it.id},'qty',this.value)" placeholder="0" min="0"></td>
+                <td><input class="td-input" type="number" value="${it.rate}" oninput="updateItem(${it.id},'rate',this.value)" placeholder="0.00" min="0" step="0.01"></td>
+                <td><span class="amount-display">${it.amount>0?pdfFmt(it.amount):'-'}</span></td>
+                <td><button class="btn-rm" onclick="removeRow(${it.id})" title="Remove">✕</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+          <button class="btn-add-row" onclick="addRow()">+ Add Row</button>
+
+          <div id="totals-section">${totalsHTML()}</div>
+		<div class="section-title" style="margin-top:1.25rem">Bank Details</div>
+		<div class="BankDetails-box">
+    		<div class="total-row"><span>Bank Name</span><span>ICICI Bank</span></div>
+    		<div class="total-row"><span>Branch</span><span>Islampur</span></div>
+    		<div class="total-row"><span>A/c. No.</span><span>095505007541</span></div>
+    		<div class="total-row"><span>IFSC Code</span><span>ICIC0000955</span></div>
+  		</div>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn-action outline" onclick="resetInvoice()">🔄 Reset</button>
+            <button class="btn-action outline" onclick="showPreview=true;render()">👁 Preview</button>
+            <button class="btn-action solid" onclick="generatePDF()">📥 Download PDF</button>
+            <button class="btn-action green" onclick="showPreview=true;render();setTimeout(printInvoice,400)">🖨 Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${showPreview?previewModal():''}
+  </div>`;
+}
+
+function previewModal() {
+  return `<div class="overlay" onclick="if(event.target===this){showPreview=false;render()}">
+    <div class="preview-modal">
+      <div class="preview-header">
+        <h3>Invoice Preview</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn-action solid" style="padding:.3rem .75rem;font-size:.8rem;border-radius:6px;" onclick="generatePDF()">📥 PDF</button>
+          <button class="btn-close" onclick="showPreview=false;render()">✕</button>
+        </div>
+      </div>
+      <div id="print-area">
+        <div class="inv-print">
+          <div class="inv-print-header">
+	    <h5>||श्री||</h5>
+            <h1>स्नेहसागर सुगंधालय</h1>
+            <p> मारुती मंदिराजवळ, नगरपालिका शॉपिंग सेंटर, गाळा नं. 4,</p>
+	    <p>ईश्वरपूर, ता. वाळवा, जि. सांगली. मोबा. 9156500600, 9156829890</p>
+            <p>GSTIN No : 27AHDPG6465B1ZL</p>
+          </div>
+          <div class="inv-print-meta">
+            <div class="meta-block">
+              <strong>Billed To</strong>
+              <span>${invoice.customerName||'N/A'}</span><br>
+              ${invoice.customerMobile?`<span style="font-size:.82rem;color:var(--gray-600)">📞 +91 ${invoice.customerMobile}</span><br>`:''}
+              <span style="font-size:.8rem;color:var(--gray-600)">GSTIN: ${invoice.gstin||'N/A'}</span>
+            </div>
+            <div class="meta-block">
+              <strong>Invoice Details</strong>
+              <span>No: ${invoice.invoiceNo}</span><br>
+              <span style="font-size:.8rem;color:var(--gray-600)">Date: ${invoice.date}</span>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody>
+              ${invoice.items.map(it=>`<tr>
+                <td>${it.particular||'-'}</td>
+                <td>${it.qty||'-'}</td>
+                <td>${it.rate?pdfFmt(parseFloat(it.rate)):'-'}</td>
+                <td>${pdfFmt(it.amount)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+          <div class="print-totals">
+		<div class="print-totals-box">
+            		<div class="print-total-row"><span>Subtotal</span><span>${pdfFmt(getSubtotal())}</span></div>
+            		<div class="print-total-row"><span>SGST (2.5%)</span><span>${pdfFmt(getSGST())}</span></div>
+            		<div class="print-total-row"><span>CGST (2.5%)</span><span>${pdfFmt(getCGST())}</span></div>
+            		<div class="print-total-row"><span>Total</span><span>${pdfFmt(getTotal())}</span></div>
+            		<div class="print-total-row"><span>Round Off</span><span>${getRoundOff()>=0?'+':''}${getRoundOff().toFixed(2)}</span></div>
+	    		<div class="print-total-row"><span>Grand Total</span><span id="grandTotal">${pdfFmt(getGrandTotal())}</span></div>
+    	    		<div class="print-total-row"><span>In words Rupees :</span><span id="amountWords">${numberToWords(getGrandTotal())}</span></div>
+          	</div>
+	   </div>
+
+	   <div>
+		</br>Declaration : We declare that this invoice shows the actual price of goods described & particulars are true & correct.</br>
+		Terms : No refund Subject to Islampur Jurisdiction. 
+	   </div>
+
+	   <div class="section-title" style="margin-top:1.25rem">Bank Details</div>
+		<div class="BankDetails-box">
+    		<div class="total-row"><span>Bank Name</span><span>ICICI Bank</span></div>
+    		<div class="total-row"><span>Branch</span><span>Islampur</span></div>
+    		<div class="total-row"><span>A/c. No.</span><span>095505007541</span></div>
+    		<div class="total-row"><span>IFSC Code</span><span>ICIC0000955</span></div>
+           </div>
+
+	<div class="inv-footer">
+            <p>Thank you for your business! Visit Again! This is a computer-generated invoice.</p>
+            <p style="margin-top:4px">Powered by Snehsagar Invoice System</p>
+        </div>
+      </div>
+
+      <div class="print-action-bar" style="padding:.75rem 1.25rem;border-top:1px solid var(--gray-200);display:flex;gap:.75rem;justify-content:flex-end">
+        <button class="btn-action outline" onclick="printInvoice()">🖨 Print</button>
+        <button class="btn-action solid" onclick="generatePDF()">📥 Download PDF</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function resetInvoice() {
+  invoice = {
+    invoiceNo: invoicePdfGenerated ? getCurrentInvoiceNumber() : invoice.invoiceNo,
+    date: new Date().toISOString().slice(0,10),
+    customerName: '', customerMobile: '', gstin: '',
+    items: [{id:Date.now(),particular:'',qty:'',rate:'',amount:0}]
+  };
+  invoicePdfGenerated = false;
+  render();
+}
+
+function render() {
+    document.getElementById('root').innerHTML = view==='auth' ? authPage() : invoicePage(); setTimeout(updateAmountInWords, 100);
+}
+
+render();
+updateAmountInWords();
+
+</script>
+
+<div id="marathiHeader" style="position:absolute; left:-9999px; top:-9999px; width:800px; background:#c2185b; color:white; font-family:'Noto Sans Devanagari', sans-serif;">
+
+	<div class="download-print-header">
+	    <h5>||श्री||</h5></br>
+            <h1>स्नेहसागर सुगंधालय</h1></br></br>
+            <p> मारुती मंदिराजवळ, नगरपालिका शॉपिंग सेंटर, गाळा नं. 4,</p>
+	    <p>ईश्वरपूर, ता. वाळवा, जि. सांगली. मोबा. 9156500600, 9156829890</p>
+            <p>GSTIN No : 27AHDPG6465B1ZL</p>
+          </div>
+
+</div>
+</body>
+</html>
