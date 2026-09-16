@@ -553,7 +553,7 @@ function authPage() {
     </div>
     <div class="auth-tabs">
       <div class="auth-tab ${authTab==='login'?'active':''}" onclick="authTab='login';render()">Sign In</div>
-      <!--<div class="auth-tab ${authTab==='register'?'active':''}" onclick="authTab='register';render()">Register</div>-->
+      <div class="auth-tab ${authTab==='register'?'active':''}" onclick="authTab='register';render()">Register</div>
     </div>
     ${authTab==='login'?`
       ${loginForm.error?`<div class="err">${loginForm.error}</div>`:''}
